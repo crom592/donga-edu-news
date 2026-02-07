@@ -1,0 +1,201 @@
+# 동아교육신문 웹사이트 리뉴얼 - 클린아키텍처 설계
+
+## 프로젝트 개요
+
+| 항목 | 내용 |
+|------|------|
+| 프로젝트명 | 동아교육신문 웹사이트 리뉴얼 |
+| 견적 | ₩20,000,000 (VAT 별도) |
+| 기간 | 3.5개월 |
+| 기술스택 | Next.js 14 + Payload CMS + Vercel |
+
+## 주요 기능
+
+1. **AI 검색 시스템** - 뉴스 기사 시맨틱 검색
+2. **뉴스레터 시스템** - 구독/발송/관리
+3. **반응형 디자인** - 모바일/태블릿/데스크톱
+4. **관리자 페이지** - 기사/구독자/통계 관리
+
+---
+
+## 클린아키텍처 구조
+
+```
+src/
+├── domain/           # 🎯 비즈니스 로직 (프레임워크 무관)
+│   ├── entities/     # 핵심 엔티티
+│   ├── usecases/     # 유스케이스
+│   └── repositories/ # 레포지토리 인터페이스
+│
+├── data/             # 💾 데이터 레이어
+│   ├── repositories/ # 레포지토리 구현체
+│   ├── datasources/  # API, CMS 연동
+│   └── models/       # DTO, 매퍼
+│
+├── presentation/     # 🖥️ UI 레이어
+│   ├── pages/        # Next.js 페이지
+│   ├── components/   # React 컴포넌트
+│   └── hooks/        # 커스텀 훅
+│
+└── infrastructure/   # ⚙️ 외부 서비스
+    ├── ai/           # AI 검색 (OpenAI)
+    ├── email/        # 이메일 발송
+    └── cms/          # Payload CMS
+```
+
+---
+
+## Domain Layer
+
+### Entities
+
+#### Article (기사)
+```typescript
+interface Article {
+  id: string;
+  title: string;
+  content: string;
+  summary: string;
+  category: Category;
+  author: Author;
+  publishedAt: Date;
+  tags: string[];
+  viewCount: number;
+  embedding?: number[]; // AI 검색용
+}
+```
+
+#### Newsletter (뉴스레터)
+```typescript
+interface Newsletter {
+  id: string;
+  title: string;
+  content: string;
+  articles: Article[];
+  scheduledAt: Date;
+  sentAt?: Date;
+  recipients: Subscriber[];
+  stats: NewsletterStats;
+}
+```
+
+#### Subscriber (구독자)
+```typescript
+interface Subscriber {
+  id: string;
+  email: string;
+  name?: string;
+  subscribedAt: Date;
+  preferences: SubscriptionPreferences;
+  status: 'active' | 'unsubscribed';
+}
+```
+
+### Use Cases
+
+1. **SearchArticlesUseCase** - AI 시맨틱 검색
+2. **GetArticlesByCategory** - 카테고리별 기사 조회
+3. **SubscribeNewsletter** - 뉴스레터 구독
+4. **SendNewsletter** - 뉴스레터 발송
+5. **ManageArticle** - 기사 CRUD
+
+---
+
+## Data Layer
+
+### Repositories
+
+```typescript
+interface ArticleRepository {
+  findById(id: string): Promise<Article>;
+  findByCategory(category: Category): Promise<Article[]>;
+  search(query: string): Promise<Article[]>;
+  semanticSearch(query: string, limit: number): Promise<Article[]>;
+  save(article: Article): Promise<Article>;
+  delete(id: string): Promise<void>;
+}
+
+interface SubscriberRepository {
+  findByEmail(email: string): Promise<Subscriber | null>;
+  findActive(): Promise<Subscriber[]>;
+  subscribe(email: string, name?: string): Promise<Subscriber>;
+  unsubscribe(email: string): Promise<void>;
+}
+
+interface NewsletterRepository {
+  findById(id: string): Promise<Newsletter>;
+  findScheduled(): Promise<Newsletter[]>;
+  create(newsletter: Newsletter): Promise<Newsletter>;
+  send(id: string): Promise<void>;
+}
+```
+
+---
+
+## 개발 단계 (모듈별)
+
+### Phase 1: 기반 구축 (2주)
+- [ ] Next.js 14 프로젝트 셋업
+- [ ] Payload CMS 설정
+- [ ] 클린아키텍처 폴더 구조
+- [ ] 기본 엔티티 정의
+
+### Phase 2: 기사 시스템 (3주)
+- [ ] Article 엔티티 & 레포지토리
+- [ ] 기사 목록/상세 페이지
+- [ ] 카테고리 필터링
+- [ ] 관리자 기사 CRUD
+
+### Phase 3: AI 검색 (2주)
+- [ ] OpenAI Embeddings 연동
+- [ ] 시맨틱 검색 구현
+- [ ] 검색 UI/UX
+- [ ] 검색 결과 캐싱
+
+### Phase 4: 뉴스레터 (2주)
+- [ ] Subscriber 엔티티 & 레포지토리
+- [ ] 구독 폼 & 이메일 인증
+- [ ] 뉴스레터 편집기
+- [ ] 이메일 발송 (Resend/SendGrid)
+
+### Phase 5: 마무리 (1주)
+- [ ] 반응형 디자인 점검
+- [ ] 성능 최적화
+- [ ] SEO 설정
+- [ ] 배포 (Vercel)
+
+---
+
+## 기술 스택 상세
+
+| 영역 | 기술 | 이유 |
+|------|------|------|
+| Frontend | Next.js 14 (App Router) | SSR, SEO, 최신 |
+| CMS | Payload CMS | 타입세이프, 유연 |
+| Database | PostgreSQL | 안정성, 확장성 |
+| AI Search | OpenAI Embeddings | 시맨틱 검색 |
+| Vector DB | Pinecone / pgvector | 임베딩 저장 |
+| Email | Resend | 개발자 친화적 |
+| Hosting | Vercel | Next.js 최적화 |
+| Storage | Vercel Blob / S3 | 이미지 저장 |
+
+---
+
+## Repository 구조
+
+```
+donga-edu-news/
+├── src/
+│   ├── domain/
+│   ├── data/
+│   ├── presentation/
+│   └── infrastructure/
+├── payload/           # CMS 설정
+├── public/            # 정적 파일
+├── docs/              # 문서
+└── tests/             # 테스트
+```
+
+---
+
+*Generated by 또리 🐣 | 2026-02-07*
